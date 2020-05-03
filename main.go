@@ -17,16 +17,23 @@ DNS name associated with the certificate that is returned.
 
 func main() {
 	//Setup variables
-	inputFile := flag.String("i", "filename", "input filename")
-	outputFile := flag.String("o", "filename", "output filename")
-	screenOnly := flag.Bool("s", false, "print to screen")
+	inputFile := flag.String("i", "", "Input filename -- IP address on each line")
+	outputFile := flag.String("o", "", "Output CSV filename")
+	screenOnly := flag.Bool("s", false, "Print output to screen")
 	flag.Parse()
 
-	fmt.Println(*inputFile)
-	fmt.Println(*outputFile)
-	fmt.Println(*screenOnly)
+	var iFile, oFile string
 
-	file, err := os.Open(*inputFile) //Open file with IP to pull cert information for
+	if *inputFile == "" {
+		iFile, oFile = getfilenames()
+	} else if *screenOnly || *outputFile == "" {
+		iFile, oFile = getfilenames()
+	} else {
+		iFile = *inputFile
+		oFile = *outputFile
+	}
+
+	file, err := os.Open(iFile) //Open file with IP to pull cert information for
 
 	if err != nil {
 		log.Fatalf("failed opening file: %s", err)
@@ -67,7 +74,7 @@ func main() {
 	}
 
 	//fmt.Println(listIPName)
-	outputcsv(&listIPName, outputFile, screenOnly)
+	outputcsv(&listIPName, oFile, screenOnly)
 }
 
 //addtoslice will take a slice and add another slice to it
@@ -83,7 +90,7 @@ func addtoslice(sarr *[][]string, s []string) {
 
 //outputcsv will take hash map of IP & addresses and output a CSV
 //representation of values within the passed map
-func outputcsv(sarr *[][]string, of *string, s *bool) error {
+func outputcsv(sarr *[][]string, of string, s *bool) error {
 	err := fmt.Errorf("error in outputcsv") //Send error if unable to write
 	if *s {
 		w := csv.NewWriter(os.Stdout) //Write output to console
@@ -92,7 +99,7 @@ func outputcsv(sarr *[][]string, of *string, s *bool) error {
 			log.Fatalln("error writing csv:", err)
 		}
 	} else {
-		csvFile, err := os.Create(*of)
+		csvFile, err := os.Create(of)
 		if err != nil {
 			log.Fatalf("failed creating file: %s", err)
 		}
@@ -117,5 +124,4 @@ func getfilenames() (string, string) {
 	outputfile := bufio.NewScanner(os.Stdin) //Get output file name
 	outputfile.Scan()
 	return inputfile.Text(), outputfile.Text()
-
 }
